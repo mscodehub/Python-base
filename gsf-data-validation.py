@@ -11,11 +11,14 @@ import sys
 import logging
 from datetime import datetime
 from multiprocessing import Process
-from collections import defaultdict,OrderedDict
+from collections import defaultdict, OrderedDict
 import itertools
+from ast import literal_eval
+
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-#logging.disable(logging.INFO)
+# logging.disable(logging.INFO)
+
 
 class Services:
 
@@ -33,7 +36,7 @@ class Services:
         self.query = query
         self.queryNumber = queryNumber'''
 
-    def __init__(self,configList,params=None,headers=None):
+    def __init__(self, configList, params=None, headers=None):
 
         if params is None:
             params = {}
@@ -52,21 +55,21 @@ class Services:
         self.headers["Host"] = configList[6]
         self.url = configList[7]
         with requests.session() as s:
-            reqsessionObj = s.post(self.authserver,params = self.params)
+            reqsessionObj = s.post(self.authserver, params=self.params)
             reqCookie = reqsessionObj.request.headers['Cookie']
             self.headers['Cookie'] = reqCookie
 
-    def call_service(self,env,data,query,queryNumber):
+    def call_service(self, env, data, query, queryNumber):
 
         logging.debug('Env being executed {}'.format(env))
         logging.debug('query being executed {}'.format(query))
 
-        url = self.url+query
+        url = self.url + query
 
         r = requests.post(url, data=json.dumps(data), headers=self.headers)
 
-        with open(str(queryNumber)+'_'+str(env)+'_'+query+'.json','w') as fw:
-            fw.write(json.dumps(r.json(),sort_keys=True,indent=4, separators=(',', ': ')))
+        with open(str(queryNumber) + '_' + str(env) + '_' + query + '.json', 'w') as fw:
+            fw.write(json.dumps(r.json(), sort_keys=True, indent=4, separators=(',', ': ')))
 
 
 class jsonFlatten:
@@ -104,38 +107,40 @@ class jsonFlatten:
     @staticmethod
     def jsonParser(inputJson):
 
-        finalDict={}
-        finalList=[]
+        finalDict = {}
+        finalList = []
         seen = {}
 
-        def jsonParserHelper(inputJson,name =''):
+        def jsonParserHelper(inputJson, name=''):
 
-            #making it global because it's being referenced before assigned in else "finalDict[name] = finalList"
+            # making it global because it's being referenced before assigned in else
+            # "finalDict[name] = finalList"
             global finalList
 
-            if isinstance(inputJson,dict):
+            if isinstance(inputJson, dict):
                 for dictKey in inputJson:
                     finalList = []
-                    jsonParserHelper(inputJson[dictKey],name+'_'+dictKey)
-            elif isinstance(inputJson,list):
+                    jsonParserHelper(inputJson[dictKey], name + '_' + dictKey)
+            elif isinstance(inputJson, list):
                 if len(inputJson) == 0:
                     finalList.append('Empty')
                     finalDict[name] = finalList
                 for eachItem in inputJson:
-                    jsonParserHelper(eachItem,name)
+                    jsonParserHelper(eachItem, name)
             else:
                 if name in seen.keys():
                     # seen[name] = seen[name] + 1
                     # name = name + '_' + str(seen[name])
                     finalDict[name].append(inputJson)
-                    #print "Key already exists and it is {}".format(finalDict[name])
+                    # print "Key already exists and it is {}".format(finalDict[name])
                 else:
                     seen[name] = 0
                     finalList.append(inputJson)
-                    finalDict[name] = finalList
+                    finalDict[name] = sorted[literal_eval(i) if not isinstance(i, float) else i for i in finalList]
 
         jsonParserHelper(inputJson)
 
+        print "ouput is {}".format(finalDict['_detail_rows_rows_data_IT_Dos_Stores_Forecast'])
         return finalDict
 
 
@@ -158,8 +163,7 @@ class CsvfileWriter:
 
     '''
 
-    def __init__(self,dictInput,fileName,maxLength=0):
-
+    def __init__(self, dictInput, fileName, maxLength=0):
         '''
         Creates a instance with following variables.
         dictInput,fileName & maxLength
@@ -179,8 +183,7 @@ class CsvfileWriter:
         self.fileName = fileName
 
     @classmethod
-    def list_padding(cls,dictInput,fileName):
-
+    def list_padding(cls, dictInput, fileName):
         '''
         converts input dictionary having list (as values) of varying lenghts into constant length.
         Also returns class variables dictInput & maxLength
@@ -206,25 +209,25 @@ class CsvfileWriter:
         cls.fileName = fileName
         logging.debug("dictInput is {}".format(cls.dictInput))
         logging.debug("file name is {}".format(cls.fileName))
-        listValues =  dictInput.values()
+        listValues = dictInput.values()
         logging.debug("list values are {}".format(listValues))
-        listValues.sort(key = lambda i: len(i))
-        maxLength =  len(listValues[-1])
+        listValues.sort(key=lambda i: len(i))
+        maxLength = len(listValues[-1])
         logging.debug("maxLength is {}".format(maxLength))
 
         for i in listValues:
             while(len(i) < maxLength):
                 i.append('')
 
-        return cls(OrderedDict(sorted(dictInput.items())),fileName,maxLength)
+        return cls(OrderedDict(sorted(dictInput.items())), fileName, maxLength)
 
     def write_to_csv(self):
 
-        #os.chdir('/Users/Mahesh/Desktop/PythonWork/Automation/csv/')
+        # os.chdir('/Users/Mahesh/Desktop/PythonWork/Automation/csv/')
 
-        with open(self.fileName+'.csv','wb') as out_file:
-            writer = csv.writer(out_file,dialect = 'excel')
-            headers =  [k for k in self.dictInput]
+        with open(self.fileName + '.csv', 'wb') as out_file:
+            writer = csv.writer(out_file, dialect='excel')
+            headers = [k for k in self.dictInput]
             items = [self.dictInput[k] for k in self.dictInput]
             writer.writerow(headers)
             c = 0
@@ -233,7 +236,7 @@ class CsvfileWriter:
                 c += 1
 
     @staticmethod
-    def write_result_to_csv(objectList,fileName,headers=None,items=None):
+    def write_result_to_csv(objectList, fileName, headers=None, items=None):
 
         if headers is None:
             headers = []
@@ -244,28 +247,32 @@ class CsvfileWriter:
         logging.debug("objectList is {}".format(objectList))
 
         dict_prod_modified = objectList[0].dictInput
-        logging.info("Production data dictionary is {0}".format(dict_prod_modified))
+        logging.debug("dict_prod_modified is {0}".format(dict_prod_modified))
         dict_uat_modified = objectList[1].dictInput
-        logging.info("UAT data dictionary is {0}".format(dict_uat_modified))
+        logging.debug("dict_uat_modified is {0}".format(dict_uat_modified))
+
+        logging.info("Production data is {}".format(dict_prod_modified))
+        logging.info("UAT data is {}".format(dict_uat_modified))
 
         keys = set(dict_prod_modified.keys()) | set(dict_uat_modified.keys())
 
         if isinstance(dict_prod_modified.values()[0], list):
-            resultDict = {k: list(itertools.izip_longest(dict_prod_modified.get(k, [None]), dict_uat_modified.get(k, [None]))) for k in keys}
+            resultDict = {k: list(itertools.izip_longest(dict_prod_modified.get(
+                k, [None]), dict_uat_modified.get(k, [None]))) for k in keys}
         else:
-            resultDict = {k: [dict_prod_modified.get(k, None), dict_uat_modified.get(k, None)] for k in keys}
+            resultDict = {k: [dict_prod_modified.get(
+                k, None), dict_uat_modified.get(k, None)] for k in keys}
 
         logging.info("Consolidated dictionary of uat & prod is {}".format(resultDict))
 
-
-        with open(fileName +'.csv','wb+') as out_file:
-            writer = csv.writer(out_file,dialect ='excel')
+        with open(fileName + '.csv', 'wb+') as out_file:
+            writer = csv.writer(out_file, dialect='excel')
 
             headersList = ['Metric Name', 'UAT Result', 'PROD Result', 'Validation Result']
 
             writer.writerow(headersList)
 
-            for k,v in resultDict.items():
+            for k, v in resultDict.items():
 
                 for i in v:
                     itemsList = []
@@ -276,13 +283,13 @@ class CsvfileWriter:
                     if i[0] == None or i[1] == None:
                         itemsList.append('NA')
                     elif i[0] == i[1]:
-                        #print 'MATCHING',i[0],i[1]
+                        # print 'MATCHING',i[0],i[1]
                         itemsList.append('Matching')
                     else:
-                        #print 'NOT MATCHING',i[0],i[1]
+                        # print 'NOT MATCHING',i[0],i[1]
                         itemsList.append('Not Matching')
 
-                    #print itemsList
+                    # print itemsList
 
                     writer.writerow(itemsList)
 
@@ -291,27 +298,24 @@ class CsvfileWriter:
 
 def exception_handling():
     print '{0}.{1},line: {2}'.format(sys.exc_info()[0],
-                                        sys.exc_info()[1],
-                                        sys.exc_info()[2].tb_lineno)
-
-
+                                     sys.exc_info()[1],
+                                     sys.exc_info()[2].tb_lineno)
 
 
 # folder management.
 
 def folder_mgmnt(tobeDir):
 
-    scriptDir = os.path.dirname(os.path.abspath(__file__)) # Parent directory of script.
-    os.chdir(scriptDir) # Change directory to script path.
+    scriptDir = os.path.dirname(os.path.abspath(__file__))  # Parent directory of script.
+    os.chdir(scriptDir)  # Change directory to script path.
 
     if not os.path.isdir(tobeDir):
-        os.mkdir(tobeDir) # Create a directory if it doesn't exist already.
+        os.mkdir(tobeDir)  # Create a directory if it doesn't exist already.
     else:
-        shutil.rmtree(os.path.join(scriptDir,tobeDir)) # Remove if file exists.
-        os.mkdir(tobeDir) # Create a brand new directory again.
+        shutil.rmtree(os.path.join(scriptDir, tobeDir))  # Remove if file exists.
+        os.mkdir(tobeDir)  # Create a brand new directory again.
 
-    return os.path.join(scriptDir,tobeDir)
-
+    return os.path.join(scriptDir, tobeDir)
 
 
 # MAIN PROGRAM STARTS HERE.
@@ -325,7 +329,7 @@ if __name__ == '__main__':
     envObjList = []
 
     with open('Config.csv', 'rU') as f:
-        csvRead = csv.reader(f,delimiter=',',dialect='excel')
+        csvRead = csv.reader(f, delimiter=',', dialect='excel')
         header = 0
         for row in csvRead:
 
@@ -352,8 +356,8 @@ if __name__ == '__main__':
 
     scriptDir = os.path.dirname(os.path.abspath(os.getcwd()))
     multiProcess = []
-    with open(os.path.join(scriptDir,'input_requests.csv'),'rU') as f:
-        csvRead = csv.reader(f,delimiter=',',dialect='excel')
+    with open(os.path.join(scriptDir, 'input_requests.csv'), 'rU') as f:
+        csvRead = csv.reader(f, delimiter=',', dialect='excel')
 
         header = 0
         queryNumber = 0
@@ -370,10 +374,10 @@ if __name__ == '__main__':
                     logging.debug('Query being executed {0}'.format(query))
                     logging.debug('Request payload being executed {0}'.format(data))
 
-                    p = Process(target = envObject.call_service, args = (env,data,query,queryNumber,))
+                    p = Process(target=envObject.call_service,
+                                args=(env, data, query, queryNumber,))
                     multiProcess.append(p)
                     logging.debug('Execution of object {0}'.format(envObject))
-
 
             queryNumber += 1
             header += 1
@@ -384,7 +388,6 @@ if __name__ == '__main__':
         for p in multiProcess:
             p.join()
 
-
     #  Writes json output from query jsons to CSV file.
 
     logging.info(".....Writing to individual CSV files started.....")
@@ -392,15 +395,15 @@ if __name__ == '__main__':
     dictJson = {}
     csvObjList = []
 
-    #os.chdir('/Users/Mahesh/Desktop/PythonWork/Automation/json')
-    scriptDir = os.path.dirname(os.path.abspath(os.getcwd())) # Parent directory of script.
-    os.chdir(os.path.join(scriptDir,'json'))
+    # os.chdir('/Users/Mahesh/Desktop/PythonWork/Automation/json')
+    scriptDir = os.path.dirname(os.path.abspath(os.getcwd()))  # Parent directory of script.
+    os.chdir(os.path.join(scriptDir, 'json'))
 
     logging.debug(".......Parsing through json files to convert them into flat dictionaries......")
 
     for fileName in os.listdir(os.getcwd()):
         logging.debug("file name is {}".format(fileName))
-        with open(fileName,'r') as f:
+        with open(fileName, 'r') as f:
             fileContent = f.read()
             logging.debug("file name is {}".format(fileName))
 
@@ -417,8 +420,6 @@ if __name__ == '__main__':
             except Exception:
                 exception_handling()
 
-
-
             logging.info(".....calling the static method jsonParser.....")
             dictInput = jsonFlatten.jsonParser(dictJson['result'])
             logging.info(".....Json parsing is completed successfully.....")
@@ -426,7 +427,7 @@ if __name__ == '__main__':
             logging.info(".....Calling list_padding.....")
 
             try:
-                cf = CsvfileWriter.list_padding(dictInput,fileName.split('.')[0])
+                cf = CsvfileWriter.list_padding(dictInput, fileName.split('.')[0])
             except Exception:
                 logging.error('Error while creating a instance for {}'.format(fileName))
                 exception_handling()
@@ -436,7 +437,6 @@ if __name__ == '__main__':
             csvObjList.append(cf)
 
     logging.debug("file objects are {}".format(csvObjList))
-
 
     #  Writes json output from query jsons to CSV file.
 
@@ -450,7 +450,7 @@ if __name__ == '__main__':
         logging.debug("csvObj fileName is {}".format(csvObj.fileName))
 
         logging.info(".....calling write_to_csv method for creation of {} .....".format(csvObj.fileName))
-        p = Process(target = csvObj.write_to_csv)
+        p = Process(target=csvObj.write_to_csv)
 
         multiProcess.append(p)
 
@@ -482,19 +482,19 @@ if __name__ == '__main__':
 
     ro = re.compile(r'(\d+)_(production)_(.*)')
 
-    #print "printing fileindexDict.items() {}".format(fileindexDict.items())
+    # print "printing fileindexDict.items() {}".format(fileindexDict.items())
 
-    #os.chdir('/Users/Mahesh/Desktop/PythonWork/Automation/result')
+    # os.chdir('/Users/Mahesh/Desktop/PythonWork/Automation/result')
     workPath = folder_mgmnt('result')
     os.chdir(workPath)
 
     multiProcess = []
-    for (k,v) in fileindexDict.items():
+    for (k, v) in fileindexDict.items():
         fileName = v[0].fileName
         mo = ro.findall(fileName)
         fileName = k + '_' + mo[0][2]
         logging.info(".....calling write_result_to_csv method for creation of {} .....".format(fileName))
-        p = Process(target = CsvfileWriter.write_result_to_csv(v,fileName,))
+        p = Process(target=CsvfileWriter.write_result_to_csv(v, fileName,))
         multiProcess.append(p)
 
     for p in multiProcess:
