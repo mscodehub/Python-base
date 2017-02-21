@@ -244,9 +244,9 @@ class CsvfileWriter:
         logging.debug("objectList is {}".format(objectList))
 
         dict_prod_modified = objectList[0].dictInput
-        logging.debug("dict_prod_modified is {0}".format(dict_prod_modified))
+        logging.info("Production data dictionary is {0}".format(dict_prod_modified))
         dict_uat_modified = objectList[1].dictInput
-        logging.debug("dict_uat_modified is {0}".format(dict_uat_modified))
+        logging.info("UAT data dictionary is {0}".format(dict_uat_modified))
 
         keys = set(dict_prod_modified.keys()) | set(dict_uat_modified.keys())
 
