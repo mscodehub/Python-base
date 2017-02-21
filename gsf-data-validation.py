@@ -136,7 +136,8 @@ class jsonFlatten:
                 else:
                     seen[name] = 0
                     finalList.append(inputJson)
-                    finalDict[name] = sorted[literal_eval(i) if not isinstance(i, float) else i for i in finalList]
+                    finalDict[name] = sorted(
+                        [literal_eval(i) if not isinstance(i, float) else i for i in finalList])
 
         jsonParserHelper(inputJson)
 
