@@ -13,7 +13,8 @@ from datetime import datetime
 from multiprocessing import Process
 from collections import defaultdict, OrderedDict
 import itertools
-from ast import literal_eval
+# from ast import literal_eval
+# import codecs
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -30,11 +31,11 @@ class Services:
 
     """
 
-    '''def __init__(self,headers,params,authserver,url,env,data,query,queryNumber):
-        super().__init__(params,headers,authserver,url)
-        self.data = data
-        self.query = query
-        self.queryNumber = queryNumber'''
+    # def __init__(self,headers,params,authserver,url,env,data,query,queryNumber):
+    #     super().__init__(params,headers,authserver,url)
+    #     self.data = data
+    #     self.query = query
+    #     self.queryNumber = queryNumber
 
     def __init__(self, configList, params=None, headers=None):
 
@@ -74,7 +75,7 @@ class Services:
 
 class jsonFlatten:
 
-    '''
+    """
     Below static function is called to convert json output to flat dictionary with values populated as a list.
 
     For ex:-
@@ -102,7 +103,7 @@ class jsonFlatten:
     ]
     }
 
-    '''
+    """
 
     @staticmethod
     def jsonParser(inputJson):
@@ -136,18 +137,26 @@ class jsonFlatten:
                 else:
                     seen[name] = 0
                     finalList.append(inputJson)
-                    finalDict[name] = sorted(
-                        [literal_eval(i) if not isinstance(i, float) else i for i in finalList])
+
+                    logging.debug("finalList is {}".format(finalList))
+
+                    finalDict[name] = finalList
+                    logging.debug("finalDict[name] is {}".format(finalDict[name]))
+                    # finalDict[name] = sorted(
+                    #     [i.encode('utf-8') if isinstance(i, unicode) else i for i in finalList])
 
         jsonParserHelper(inputJson)
 
-        print "ouput is {}".format(finalDict['_detail_rows_rows_data_IT_Dos_Stores_Forecast'])
+        for k, v in finalDict.items():
+            finalDict[k] = sorted(v)
+
+        logging.info("finalDict is {}".format(finalDict))
         return finalDict
 
 
 class CsvfileWriter:
 
-    '''
+    """
     Takes dictionary as input and writes items into a CSV file.
 
     For ex:-
@@ -162,10 +171,10 @@ class CsvfileWriter:
     xyz,zzz,abc
     ,,def
 
-    '''
+    """
 
     def __init__(self, dictInput, fileName, maxLength=0):
-        '''
+        """
         Creates a instance with following variables.
         dictInput,fileName & maxLength
 
@@ -178,14 +187,14 @@ class CsvfileWriter:
 
         maxLength -> length of the list
 
-        '''
+        """
         self.dictInput = dictInput
         self.maxLength = maxLength
         self.fileName = fileName
 
     @classmethod
     def list_padding(cls, dictInput, fileName):
-        '''
+        """
         converts input dictionary having list (as values) of varying lenghts into constant length.
         Also returns class variables dictInput & maxLength
 
@@ -204,7 +213,7 @@ class CsvfileWriter:
         dict_data = {"1":["xyz",""],"2":["abc","def"],"3":["zzz",""]}
 
 
-        '''
+        """
         logging.info("......Class method variables assignment started......")
         cls.dictInput = dictInput
         cls.fileName = fileName
@@ -216,9 +225,9 @@ class CsvfileWriter:
         maxLength = len(listValues[-1])
         logging.debug("maxLength is {}".format(maxLength))
 
-        for i in listValues:
-            while(len(i) < maxLength):
-                i.append('')
+        # for i in listValues:
+        #     while(len(i) < maxLength):
+        #         i.append('')
 
         return cls(OrderedDict(sorted(dictInput.items())), fileName, maxLength)
 
@@ -329,6 +338,8 @@ if __name__ == '__main__':
 
     envObjList = []
 
+    print
+
     with open('Config.csv', 'rU') as f:
         csvRead = csv.reader(f, delimiter=',', dialect='excel')
         header = 0
@@ -378,6 +389,7 @@ if __name__ == '__main__':
                     p = Process(target=envObject.call_service,
                                 args=(env, data, query, queryNumber,))
                     multiProcess.append(p)
+
                     logging.debug('Execution of object {0}'.format(envObject))
 
             queryNumber += 1
@@ -422,9 +434,11 @@ if __name__ == '__main__':
                 exception_handling()
 
             logging.info(".....calling the static method jsonParser.....")
-            dictInput = jsonFlatten.jsonParser(dictJson['result'])
-            logging.info(".....Json parsing is completed successfully.....")
+            logging.debug("dictionary to be parsed is {}".format(dictJson['result']))
 
+            dictInput = jsonFlatten.jsonParser(dictJson['result'])
+
+            logging.info(".....Json parsing is completed successfully.....")
             logging.info(".....Calling list_padding.....")
 
             try:
@@ -444,25 +458,25 @@ if __name__ == '__main__':
     # workPath = folder_mgmnt('json')
     # os.chdir(workPath)
 
-    multiProcess = []
-    for csvObj in csvObjList:
-        logging.debug("csv object name is {}".format(csvObj))
-        logging.debug("csvObj dictInput is {}".format(csvObj.dictInput))
-        logging.debug("csvObj fileName is {}".format(csvObj.fileName))
-
-        logging.info(".....calling write_to_csv method for creation of {} .....".format(csvObj.fileName))
-        p = Process(target=csvObj.write_to_csv)
-
-        multiProcess.append(p)
-
-    for p in multiProcess:
-        p.start()
-
-    for p in multiProcess:
-        p.join()
-
-    logging.info(".....write_to_csv is completed successfully.....")
-
+    # multiProcess = []
+    # for csvObj in csvObjList:
+    #     logging.debug("csv object name is {}".format(csvObj))
+    #     logging.debug("csvObj dictInput is {}".format(csvObj.dictInput))
+    #     logging.debug("csvObj fileName is {}".format(csvObj.fileName))
+    #
+    #     logging.info(".....calling write_to_csv method for creation of {} .....".format(csvObj.fileName))
+    #     p = Process(target=csvObj.write_to_csv)
+    #
+    #     multiProcess.append(p)
+    #
+    # for p in multiProcess:
+    #     p.start()
+    #
+    # for p in multiProcess:
+    #     p.join()
+    #
+    # logging.info(".....write_to_csv is completed successfully.....")
+    #
     fileindexDict = {}
     fileIndexList = []
 
